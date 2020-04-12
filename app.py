@@ -58,6 +58,19 @@ class User(db.Model):
         def __repr__(self):
             return '<User %r>' % self.username
 
+class UserProfile(db.Model):
+    __tablename__ = 'userprofile'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, index=True)
+    userimage = db.Column(db.String(64))  # 存储路径
+
+    def __init__(self, username, userimage):
+        self.username = username
+        self.userimage = userimage
+
+    def __repr__(self):
+        return '<UserProfile %r>' % self.username
 
 @app.route('/register',methods=['POST'])
 def register_func():
@@ -96,6 +109,61 @@ def login():
         return jsonify({
             username:"try again"
             })
+        
+# 上传头像模块
+@app.route('/update/profile', methods=['POST'])
+def update_profile():
+    user_id = request.form['username']
+    img_name = request.form['filename']
+    PROFLIE = base64.b64decode(request.form['b64'])
+    print("username is {}".format(user_id))
+    print("img_name is {}".format(img_name))
+
+    # 存储图片，无文件夹直接创建，若已有头像，直接覆盖
+    if not os.path.isdir(user_id):
+        os.mkdir(user_id)
+    filepath = os.path.join(user_id, img_name)
+    cp_filepath = load_path()
+    cp_filepath += filepath
+    print("filepath is {}".format(filepath))
+    print("compelete path is {}".format(cp_filepath))
+    try:
+        with open(filepath, "wb") as f:
+            f.write(PROFLIE)
+    except:
+        return "1"
+    # 更新数据库
+    user = UserProfile.query.filter_by(username=user_id).all()
+    if user.__len__ is not 0:
+        # 更新指定条目
+        userupdate = UserProfile.query.filter_by(username=user_id).first()
+        print(userupdate.userimage)
+        userupdate.userimage = cp_filepath
+        db.session.commit()
+    else:
+        userinfo = UserProfile(username=user_id,
+                               userimage=cp_filepath)
+        db.session.add(userinfo)
+        db.session.commit()
+
+    return "0"
+    # 自动更新头像
+
+# 加载头像模块
+@app.route('/load/profile', methods=['POST'])
+def load_profile():
+    user_id = request.form['username']
+    print("username is {}".format(user_id))
+
+    # 查询数据库得到图片路径
+    userinfo = UserProfile.query.filter_by(username=user_id).first()
+    path = userinfo.userimage
+    # base64编码
+    with open (path, "rb") as f:
+        b64 = base64.b64encode(f.read())
+    # 返回Base64编码，客户端保存到本地加载
+    return b64
+
 
 def pack_raw(raw):
     # pack Bayer image to 4 channels
