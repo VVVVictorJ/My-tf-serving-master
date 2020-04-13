@@ -110,7 +110,9 @@ def login():
             username:"try again"
             })
         
-# 上传头像模块
+'''
+@description 登录模块
+'''
 @app.route('/update/profile', methods=['POST'])
 def update_profile():
     user_id = request.form['username']
@@ -149,20 +151,29 @@ def update_profile():
     return "0"
     # 自动更新头像
 
-# 加载头像模块
+'''
+@description 加载头像模块
+'''
 @app.route('/load/profile', methods=['POST'])
 def load_profile():
     user_id = request.form['username']
     print("username is {}".format(user_id))
 
-    # 查询数据库得到图片路径
-    userinfo = UserProfile.query.filter_by(username=user_id).first()
-    path = userinfo.userimage
-    # base64编码
-    with open (path, "rb") as f:
-        b64 = base64.b64encode(f.read())
-    # 返回Base64编码，客户端保存到本地加载
-    return b64
+    cnt = UserProfile.query.filter_by(username=user_id).all()
+    if cnt.__len__ is not 0:
+        
+        # 查询数据库得到图片路径
+        userinfo = UserProfile.query.filter_by(username=user_id).first()
+        path = userinfo.userimage
+        # base64编码
+        with open (path, "rb") as f:
+            b64 = base64.b64encode(f.read())
+        # 返回Base64编码，客户端保存到本地加载
+        return b64
+    else:
+        return "0"
+    
+    return "0"
 
 
 def pack_raw(raw):
